@@ -15,7 +15,7 @@
 **Files:**
 - Create: `backend/package.json`, `backend/tsconfig.json`, `backend/vitest.config.ts`, `backend/tests/smoke.test.ts`, `.gitignore`
 
-- [ ] **Step 1: Criar arquivos de configuração**
+- [x] **Step 1: Criar arquivos de configuração**
 
 `backend/package.json`:
 ```json
@@ -80,16 +80,16 @@ describe('smoke', () => {
 });
 ```
 
-- [ ] **Step 2: Instalar dependências**
+- [x] **Step 2: Instalar dependências**
 
 Run: `cd backend && npm install -D typescript vitest @types/node`
 
-- [ ] **Step 3: Verificar**
+- [x] **Step 3: Verificar**
 
 Run: `npm test && npm run typecheck` (em `backend/`)
 Expected: 1 teste passando, typecheck sem erros.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A && git commit -m "chore: scaffold do backend com TypeScript estrito e Vitest"
@@ -103,7 +103,7 @@ git add -A && git commit -m "chore: scaffold do backend com TypeScript estrito e
 - Create: `backend/src/dominio/maquina-estados/estados.ts`
 - Test: `backend/tests/dominio/estados.test.ts`
 
-- [ ] **Step 1: Escrever teste que falha**
+- [x] **Step 1: Escrever teste que falha**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -129,11 +129,11 @@ describe('mapa de transições', () => {
 });
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
+- [x] **Step 2: Rodar e ver falhar**
 
 Run: `npm test` — Expected: FAIL (módulo não existe).
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 ```ts
 // Union type de literais: cada estado é um tipo. Um typo como 'focado'
@@ -160,9 +160,9 @@ export function ehTransicaoValida(de: EstadoSessao, para: EstadoSessao): boolean
 }
 ```
 
-- [ ] **Step 4: Rodar e ver passar** — Run: `npm test` — Expected: PASS.
+- [x] **Step 4: Rodar e ver passar** — Run: `npm test` — Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat(dominio): estados e mapa de transições com garantias de compilação"
@@ -176,7 +176,7 @@ git add -A && git commit -m "feat(dominio): estados e mapa de transições com g
 - Create: `backend/src/dominio/erros/app-error.ts`, `backend/src/dominio/erros/validation-error.ts`, `backend/src/dominio/erros/transicao-invalida-error.ts`
 - Test: `backend/tests/dominio/erros.test.ts`
 
-- [ ] **Step 1: Escrever teste que falha**
+- [x] **Step 1: Escrever teste que falha**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -203,9 +203,9 @@ describe('erros customizados', () => {
 });
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — Run: `npm test` — Expected: FAIL.
+- [x] **Step 2: Rodar e ver falhar** — Run: `npm test` — Expected: FAIL.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 `app-error.ts`:
 ```ts
@@ -255,9 +255,9 @@ export class TransicaoInvalidaError extends AppError {
 }
 ```
 
-- [ ] **Step 4: Rodar e ver passar** — `npm test` — PASS.
+- [x] **Step 4: Rodar e ver passar** — `npm test` — PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat(dominio): hierarquia de erros customizados com code discriminante"
@@ -271,7 +271,7 @@ git add -A && git commit -m "feat(dominio): hierarquia de erros customizados com
 - Create: `backend/src/dominio/config/configuracao.ts`
 - Test: `backend/tests/dominio/configuracao.test.ts`
 
-- [ ] **Step 1: Escrever teste que falha**
+- [x] **Step 1: Escrever teste que falha**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -302,9 +302,9 @@ describe('resolverConfiguracao', () => {
 });
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `npm test` — FAIL.
+- [x] **Step 2: Rodar e ver falhar** — `npm test` — FAIL.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 ```ts
 import { ValidationError } from '../erros/validation-error';
@@ -340,9 +340,9 @@ export function resolverConfiguracao(parcial: ConfiguracaoPomodoro = {}): Config
 }
 ```
 
-- [ ] **Step 4: Rodar e ver passar** — `npm test` — PASS.
+- [x] **Step 4: Rodar e ver passar** — `npm test` — PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat(dominio): configuração do pomodoro com defaults e validação"
@@ -356,7 +356,7 @@ git add -A && git commit -m "feat(dominio): configuração do pomodoro com defau
 - Create: `backend/src/dominio/maquina-estados/eventos.ts`, `backend/src/dominio/maquina-estados/maquina.ts`
 - Test: `backend/tests/dominio/maquina.test.ts`
 
-- [ ] **Step 1: Escrever teste que falha**
+- [x] **Step 1: Escrever teste que falha**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -424,9 +424,9 @@ describe('transicionar', () => {
 });
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `npm test` — FAIL.
+- [x] **Step 2: Rodar e ver falhar** — `npm test` — FAIL.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 `eventos.ts`:
 ```ts
@@ -509,9 +509,9 @@ function exigirEstado(
 }
 ```
 
-- [ ] **Step 4: Rodar e ver passar** — `npm test` — PASS (todos os arquivos).
+- [x] **Step 4: Rodar e ver passar** — `npm test` — PASS (todos os arquivos).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat(dominio): reducer transicionar com regra de pausa longa por ciclos"
@@ -525,7 +525,7 @@ git add -A && git commit -m "feat(dominio): reducer transicionar com regra de pa
 - Create: `backend/src/dominio/entidades/sessao.ts`
 - Test: `backend/tests/dominio/sessao.test.ts`
 
-- [ ] **Step 1: Escrever teste que falha**
+- [x] **Step 1: Escrever teste que falha**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -568,9 +568,9 @@ describe('Sessao', () => {
 });
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `npm test` — FAIL.
+- [x] **Step 2: Rodar e ver falhar** — `npm test` — FAIL.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 ```ts
 import { ValidationError } from '../erros/validation-error';
@@ -630,9 +630,9 @@ export class Sessao {
 }
 ```
 
-- [ ] **Step 4: Rodar e ver passar** — `npm test` — PASS.
+- [x] **Step 4: Rodar e ver passar** — `npm test` — PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat(dominio): entidade Sessao com factory validada e finalização"
@@ -645,7 +645,7 @@ git add -A && git commit -m "feat(dominio): entidade Sessao com factory validada
 **Files:**
 - Create: `backend/src/aplicacao/portas/music-provider.ts`, `backend/src/aplicacao/portas/sessao-repository.ts`, `backend/src/aplicacao/portas/relogio-port.ts`
 
-- [ ] **Step 1: Criar as interfaces** (sem teste próprio — são contratos; os testes vêm com os fakes e o gerenciador)
+- [x] **Step 1: Criar as interfaces** (sem teste próprio — são contratos; os testes vêm com os fakes e o gerenciador)
 
 `music-provider.ts`:
 ```ts
@@ -679,9 +679,9 @@ export interface RelogioPort {
 }
 ```
 
-- [ ] **Step 2: Verificar** — Run: `npm run typecheck` — Expected: sem erros.
+- [x] **Step 2: Verificar** — Run: `npm run typecheck` — Expected: sem erros.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add -A && git commit -m "feat(aplicacao): portas MusicProvider, SessaoRepository e RelogioPort"
@@ -695,7 +695,7 @@ git add -A && git commit -m "feat(aplicacao): portas MusicProvider, SessaoReposi
 - Create: `backend/tests/fakes/relogio-fake.ts`, `backend/tests/fakes/music-provider-fake.ts`, `backend/tests/fakes/sessao-repository-fake.ts`
 - Test: `backend/tests/fakes/relogio-fake.test.ts`
 
-- [ ] **Step 1: Escrever teste do relógio falso (o único fake com lógica)**
+- [x] **Step 1: Escrever teste do relógio falso (o único fake com lógica)**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -734,9 +734,9 @@ describe('RelogioFake', () => {
 });
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `npm test` — FAIL.
+- [x] **Step 2: Rodar e ver falhar** — `npm test` — FAIL.
 
-- [ ] **Step 3: Implementar os três fakes**
+- [x] **Step 3: Implementar os três fakes**
 
 `relogio-fake.ts`:
 ```ts
@@ -827,9 +827,9 @@ export class SessaoRepositoryFake implements SessaoRepository {
 }
 ```
 
-- [ ] **Step 4: Rodar e ver passar** — `npm test` — PASS.
+- [x] **Step 4: Rodar e ver passar** — `npm test` — PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "test: fakes de relógio, música e repositório para a camada de aplicação"
@@ -843,7 +843,7 @@ git add -A && git commit -m "test: fakes de relógio, música e repositório par
 - Create: `backend/src/aplicacao/gerenciador-de-sessao.ts`
 - Test: `backend/tests/aplicacao/gerenciador-de-sessao.test.ts`
 
-- [ ] **Step 1: Escrever teste que falha**
+- [x] **Step 1: Escrever teste que falha**
 
 ```ts
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -931,9 +931,9 @@ describe('GerenciadorDeSessao', () => {
 });
 ```
 
-- [ ] **Step 2: Rodar e ver falhar** — `npm test` — FAIL.
+- [x] **Step 2: Rodar e ver falhar** — `npm test` — FAIL.
 
-- [ ] **Step 3: Implementar**
+- [x] **Step 3: Implementar**
 
 ```ts
 import type { ConfiguracaoResolvida } from '../dominio/config/configuracao';
@@ -1053,9 +1053,9 @@ export class GerenciadorDeSessao {
 }
 ```
 
-- [ ] **Step 4: Rodar e ver passar** — `npm test` — PASS (suíte completa).
+- [x] **Step 4: Rodar e ver passar** — `npm test` — PASS (suíte completa).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A && git commit -m "feat(aplicacao): GerenciadorDeSessao orquestrando timer, música e persistência"
@@ -1065,12 +1065,12 @@ git add -A && git commit -m "feat(aplicacao): GerenciadorDeSessao orquestrando t
 
 ### Task 10: Verificação final da fase
 
-- [ ] **Step 1: Rodar tudo**
+- [x] **Step 1: Rodar tudo**
 
 Run (em `backend/`): `npm run typecheck && npm test`
 Expected: typecheck limpo; todas as suítes passando (estados, erros, configuração, máquina, sessão, relógio fake, gerenciador).
 
-- [ ] **Step 2: Marcar checkboxes deste plano e commitar**
+- [x] **Step 2: Marcar checkboxes deste plano e commitar**
 
 ```bash
 git add docs/ && git commit -m "docs: plano da fase 1 concluído"
