@@ -1,7 +1,5 @@
 import type { Sessao } from '../../dominio/entidades/sessao';
+import type { Repository } from './repository';
 
-// Padrão Repository: o MVP só grava. O genérico Repository<T, TId>
-// será extraído na fase 2, quando houver um segundo caso concreto.
-export interface SessaoRepository {
-  salvar(sessao: Sessao): Promise<void>;
-}
+// Especialização do genérico: SessaoRepository É um Repository<Sessao, string>.
+export interface SessaoRepository extends Repository<Sessao, string> {}
