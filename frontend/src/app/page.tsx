@@ -8,12 +8,14 @@ import { MostradorTempo } from '../components/mostrador-tempo';
 import { PainelSessao } from '../components/painel-sessao';
 import { useCountdown } from '../hooks/use-countdown';
 import { useSessao } from '../hooks/use-sessao';
+import { useSessaoNotifications } from '../hooks/use-sessao-notifications';
 
 // A página é só composição: dados vêm do useSessao, tempo do
 // useCountdown, visual dos componentes. Nenhuma chamada axios aqui.
 export default function Home() {
   const sessao = useSessao();
   const restante = useCountdown(sessao.status?.terminaEm ?? null);
+  useSessaoNotifications(sessao.estado);
 
   const [contexto, setContexto] = useState('');
   const [playlistFoco, setPlaylistFoco] = useState('');
