@@ -31,6 +31,7 @@ export class GerenciadorDeSessao {
   private terminaEm: Date | null = null;
   private tempoRestanteMs: number = 0;
   private inicioDoPeríodo: number = 0;
+  private tempoParadoTotalMs: number = 0;
 
   constructor(
     private readonly config: ConfiguracaoResolvida,
@@ -43,8 +44,10 @@ export class GerenciadorDeSessao {
     const snapshotAnterior = this.snapshot;
     const sessaoAnterior = this.sessaoAtual;
     const terminaEmAnterior = this.terminaEm;
+    const tempoParadoAnterior = this.tempoParadoTotalMs;
     // O reducer valida a transição (idle -> focando) e o contexto.
     this.snapshot = transicionar(this.snapshot, { tipo: 'INICIAR', contexto }, this.config);
+    this.tempoParadoTotalMs = 0; // Reset ao iniciar nova sessão
     this.sessaoAtual = Sessao.iniciar({
       contexto: this.snapshot.contexto ?? contexto,
       iniciadaEm: this.relogio.agora(),
@@ -58,6 +61,7 @@ export class GerenciadorDeSessao {
       this.snapshot = snapshotAnterior;
       this.sessaoAtual = sessaoAnterior;
       this.terminaEm = terminaEmAnterior;
+      this.tempoParadoTotalMs = tempoParadoAnterior;
       throw erro;
     }
   }
@@ -67,6 +71,7 @@ export class GerenciadorDeSessao {
     const snapshotAnterior = this.snapshot;
     const sessaoAnterior = this.sessaoAtual;
     const terminaEmAnterior = this.terminaEm;
+    const tempoParadoAnterior = this.tempoParadoTotalMs;
     // Valida primeiro (lança em idle), só depois mexe em timer/música.
     this.snapshot = transicionar(this.snapshot, { tipo: 'FINALIZAR' }, this.config);
     const sessao = this.sessaoAtual;
@@ -75,7 +80,7 @@ export class GerenciadorDeSessao {
       throw new Error('estado inconsistente: sessão ativa sem entidade Sessao');
     }
     this.pararTimer();
-    sessao.finalizar(this.relogio.agora(), ciclos);
+    sessao.finalizarComPausa(this.relogio.agora(), ciclos, this.tempoParadoTotalMs);
     this.sessaoAtual = null;
     this.terminaEm = null;
     try {
@@ -90,6 +95,7 @@ export class GerenciadorDeSessao {
       this.snapshot = snapshotAnterior;
       this.sessaoAtual = sessaoAnterior;
       this.terminaEm = terminaEmAnterior;
+      this.tempoParadoTotalMs = tempoParadoAnterior;
       throw erro;
     }
     return sessao;
@@ -108,11 +114,19 @@ export class GerenciadorDeSessao {
     const tempoPassadoMs = agora - this.inicioDoPeríodo;
     this.tempoRestanteMs = Math.max(0, this.tempoRestanteMs - tempoPassadoMs);
 
+    // Marca quando iniciou a pausa (para descontar do total ao retomar/finalizar)
+    this.inicioDoPeríodo = agora;
+
     // Transiciona a máquina
     this.snapshot = transicionar(this.snapshot, { tipo: 'PAUSAR' }, this.config);
   }
 
   retomar(): void {
+    // Calcula quanto tempo ficou pausado
+    const agora = this.relogio.agora().getTime();
+    const tempoParadoMs = agora - this.inicioDoPeríodo;
+    this.tempoParadoTotalMs += tempoParadoMs;
+
     // Transiciona a máquina
     this.snapshot = transicionar(this.snapshot, { tipo: 'RETOMAR' }, this.config);
 

@@ -10,6 +10,7 @@ export interface DadosNovaSessao {
 export class Sessao {
   private finalizadaEmInterno: Date | null = null;
   private ciclosInterno = 0;
+  private tempoParadoTotalMs = 0;
 
   private constructor(
     readonly id: string,
@@ -29,7 +30,7 @@ export class Sessao {
     return new Sessao(crypto.randomUUID(), contexto, dados.iniciadaEm, dados.playlistFoco, dados.playlistPausa);
   }
 
-  finalizar(em: Date, ciclosCompletados: number): void {
+  finalizarComPausa(em: Date, ciclosCompletados: number, tempoParadoMs: number): void {
     if (this.finalizadaEmInterno !== null) {
       throw new ValidationError('a sessão já foi finalizada');
     }
@@ -38,6 +39,11 @@ export class Sessao {
     }
     this.finalizadaEmInterno = em;
     this.ciclosInterno = ciclosCompletados;
+    this.tempoParadoTotalMs = tempoParadoMs;
+  }
+
+  finalizar(em: Date, ciclosCompletados: number): void {
+    this.finalizarComPausa(em, ciclosCompletados, 0);
   }
 
   get finalizadaEm(): Date | null {
@@ -50,6 +56,8 @@ export class Sessao {
 
   get duracaoTotalSeg(): number | null {
     if (this.finalizadaEmInterno === null) return null;
-    return Math.round((this.finalizadaEmInterno.getTime() - this.iniciadaEm.getTime()) / 1000);
+    const duracaoBrutaMs = this.finalizadaEmInterno.getTime() - this.iniciadaEm.getTime();
+    const duracaoLiquidaMs = duracaoBrutaMs - this.tempoParadoTotalMs;
+    return Math.round(duracaoLiquidaMs / 1000);
   }
 }
