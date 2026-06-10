@@ -40,8 +40,9 @@ describe('API /sessao', () => {
     expect(criada.status).toBe(201);
 
     const status = await request(app).get('/sessao');
-    expect(status.body.snapshot.estado).toBe('focando');
+    expect(status.body.estado).toBe('focando');
     expect(status.body.terminaEm).toBeTruthy();
+    expect(status.body.pausado).toBe(false);
   });
 
   it('POST /sessao sem contexto retorna 400 com code VALIDATION', async () => {
