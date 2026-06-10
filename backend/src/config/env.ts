@@ -6,8 +6,6 @@ export interface VariaveisAmbiente {
   readonly supabaseServiceRoleKey: string;
   readonly spotifyClientId: string;
   readonly spotifyRedirectUri: string;
-  readonly playlistFoco: string;
-  readonly playlistPausa: string;
 }
 
 // Recebe o dicionário em vez de ler process.env direto: testável sem
@@ -19,8 +17,6 @@ export function carregarEnv(fonte: Record<string, string | undefined>): Variavei
     supabaseServiceRoleKey: obrigatoria(fonte, 'SUPABASE_SERVICE_ROLE_KEY'),
     spotifyClientId: obrigatoria(fonte, 'SPOTIFY_CLIENT_ID'),
     spotifyRedirectUri: obrigatoria(fonte, 'SPOTIFY_REDIRECT_URI'),
-    playlistFoco: normalizarPlaylist(obrigatoria(fonte, 'PLAYLIST_FOCO')),
-    playlistPausa: normalizarPlaylist(obrigatoria(fonte, 'PLAYLIST_PAUSA')),
   };
 }
 
@@ -30,13 +26,4 @@ function obrigatoria(fonte: Record<string, string | undefined>, nome: string): s
     throw new ValidationError(`variável de ambiente obrigatória ausente: ${nome}`);
   }
   return valor;
-}
-
-// Aceita 'spotify:playlist:ID' ou 'https://open.spotify.com/playlist/ID?...'
-function normalizarPlaylist(valor: string): string {
-  const uri = /^spotify:playlist:([A-Za-z0-9]+)$/.exec(valor);
-  if (uri) return valor;
-  const url = /^https:\/\/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/.exec(valor);
-  if (url) return `spotify:playlist:${url[1]}`;
-  throw new ValidationError(`playlist inválida: '${valor}' (use a URL do Spotify ou spotify:playlist:ID)`);
 }

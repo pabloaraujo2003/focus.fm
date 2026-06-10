@@ -7,7 +7,12 @@ import { gerarParPkce } from './pkce';
 
 const URL_AUTORIZACAO = 'https://accounts.spotify.com/authorize';
 const URL_TOKEN = 'https://accounts.spotify.com/api/token';
-const ESCOPOS = 'user-modify-playback-state user-read-playback-state';
+const ESCOPOS = [
+  'user-modify-playback-state',
+  'user-read-playback-state',
+  'playlist-read-private',
+  'playlist-read-collaborative',
+].join(' ');
 const MARGEM_MS = 30_000; // renova 30s antes de expirar
 
 export interface ConfigSpotifyAuth {
@@ -22,8 +27,6 @@ interface RespostaToken {
 }
 
 export class SpotifyAuth {
-  private verifierPendente: string | null = null;
-
   constructor(
     private readonly config: ConfigSpotifyAuth,
     private readonly armazem: ArmazemTokens,
@@ -33,7 +36,7 @@ export class SpotifyAuth {
 
   urlDeAutorizacao(): string {
     const { verifier, challenge } = gerarParPkce();
-    this.verifierPendente = verifier;
+    this.armazem.gravarPkceVerifierPendente(verifier);
     const url = new URL(URL_AUTORIZACAO);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('client_id', this.config.clientId);
@@ -45,7 +48,8 @@ export class SpotifyAuth {
   }
 
   async trocarCodigo(code: string): Promise<void> {
-    if (this.verifierPendente === null) {
+    const verifierPendente = this.armazem.lerPkceVerifierPendente();
+    if (verifierPendente === null) {
       throw new SpotifyError('fluxo de autorização não iniciado — acesse /auth/spotify primeiro');
     }
     const resposta = await this.pedirToken({
@@ -53,10 +57,10 @@ export class SpotifyAuth {
       code,
       redirect_uri: this.config.redirectUri,
       client_id: this.config.clientId,
-      code_verifier: this.verifierPendente,
+      code_verifier: verifierPendente,
     });
-    this.verifierPendente = null;
     this.persistir(resposta, null);
+    this.armazem.limparPkceVerifierPendente();
   }
 
   // Renovação automática: quem consome (SpotifyProvider) nunca pensa em refresh.

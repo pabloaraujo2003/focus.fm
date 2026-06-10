@@ -10,6 +10,14 @@ import { RelogioFake } from '../fakes/relogio-fake';
 function criarAuth(relogio = new RelogioFake()) {
   const arquivo = join(mkdtempSync(join(tmpdir(), 'pomodoro-')), 'tokens.json');
   const http = { post: vi.fn() };
+  return criarAuthComArquivo(arquivo, relogio, http);
+}
+
+function criarAuthComArquivo(
+  arquivo: string,
+  relogio = new RelogioFake(),
+  http = { post: vi.fn() },
+) {
   const auth = new SpotifyAuth(
     { clientId: 'cid', redirectUri: 'http://127.0.0.1:3333/cb' },
     new ArmazemTokens(arquivo),
@@ -20,14 +28,16 @@ function criarAuth(relogio = new RelogioFake()) {
 }
 
 describe('SpotifyAuth', () => {
-  it('monta URL de autorização com PKCE e escopos mínimos', () => {
+  it('monta URL de autorização com PKCE e escopos de playback e playlists', () => {
     const { auth } = criarAuth();
     const url = new URL(auth.urlDeAutorizacao());
     expect(url.origin + url.pathname).toBe('https://accounts.spotify.com/authorize');
     expect(url.searchParams.get('client_id')).toBe('cid');
     expect(url.searchParams.get('response_type')).toBe('code');
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
-    expect(url.searchParams.get('scope')).toBe('user-modify-playback-state user-read-playback-state');
+    expect(url.searchParams.get('scope')).toBe(
+      'user-modify-playback-state user-read-playback-state playlist-read-private playlist-read-collaborative',
+    );
   });
 
   it('troca o code por tokens e persiste; tokenDeAcesso retorna sem refresh enquanto válido', async () => {
@@ -44,6 +54,23 @@ describe('SpotifyAuth', () => {
     );
     expect(await auth.tokenDeAcesso()).toBe('acc1');
     expect(http.post).toHaveBeenCalledTimes(1); // não renovou
+  });
+
+  it('troca o code mesmo se o backend reiniciar entre autorização e callback', async () => {
+    const { auth, arquivo } = criarAuth();
+    auth.urlDeAutorizacao();
+
+    const httpDepoisDoRestart = { post: vi.fn().mockResolvedValueOnce({
+      data: { access_token: 'acc1', refresh_token: 'ref1', expires_in: 3600 },
+    }) };
+    const { auth: authDepoisDoRestart } = criarAuthComArquivo(
+      arquivo,
+      new RelogioFake(),
+      httpDepoisDoRestart,
+    );
+
+    await authDepoisDoRestart.trocarCodigo('codigo-recebido');
+    expect(await authDepoisDoRestart.tokenDeAcesso()).toBe('acc1');
   });
 
   it('renova automaticamente quando o token expira', async () => {

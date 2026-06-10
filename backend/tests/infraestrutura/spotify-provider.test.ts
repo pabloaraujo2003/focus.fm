@@ -13,13 +13,68 @@ function erroHttp(status: number, headers: Record<string, string> = {}, mensagem
 
 function criarProvider() {
   const relogio = new RelogioFake();
-  const http = { put: vi.fn().mockResolvedValue({ status: 204 }) };
+  const http = {
+    get: vi.fn(),
+    put: vi.fn().mockResolvedValue({ status: 204 }),
+  };
   const auth = { tokenDeAcesso: vi.fn().mockResolvedValue('tok') };
   const provider = new SpotifyProvider(http as unknown as AxiosInstance, auth as never, relogio);
   return { provider, http, auth, relogio };
 }
 
 describe('SpotifyProvider', () => {
+  it('listarPlaylists faz GET /me/playlists e mapeia campos para a UI', async () => {
+    const { provider, http } = criarProvider();
+    http.get.mockResolvedValueOnce({
+      data: {
+        next: null,
+        items: [
+          {
+            id: 'AAA',
+            name: 'Deep work',
+            uri: 'spotify:playlist:AAA',
+            images: [{ url: 'https://i.scdn.co/image/a' }],
+          },
+        ],
+      },
+    });
+    await expect(provider.listarPlaylists()).resolves.toEqual([
+      {
+        id: 'AAA',
+        nome: 'Deep work',
+        uri: 'spotify:playlist:AAA',
+        totalFaixas: 0,
+        imagemUrl: 'https://i.scdn.co/image/a',
+      },
+    ]);
+    expect(http.get).toHaveBeenCalledWith(
+      'https://api.spotify.com/v1/me/playlists?limit=50',
+      { headers: { Authorization: 'Bearer tok' } },
+    );
+  });
+
+  it('listarPlaylists segue paginação do Spotify', async () => {
+    const { provider, http } = criarProvider();
+    http.get
+      .mockResolvedValueOnce({
+        data: {
+          next: 'https://api.spotify.com/v1/me/playlists?offset=50&limit=50',
+          items: [{ id: 'A', name: 'A', uri: 'spotify:playlist:A', tracks: { total: 1 }, images: [] }],
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          next: null,
+          items: [{ id: 'B', name: 'B', uri: 'spotify:playlist:B', tracks: { total: 2 }, images: [] }],
+        },
+      });
+    await expect(provider.listarPlaylists()).resolves.toHaveLength(2);
+    expect(http.get).toHaveBeenLastCalledWith(
+      'https://api.spotify.com/v1/me/playlists?offset=50&limit=50',
+      { headers: { Authorization: 'Bearer tok' } },
+    );
+  });
+
   it('tocarPlaylist faz PUT /me/player/play com context_uri e bearer', async () => {
     const { provider, http } = criarProvider();
     await provider.tocarPlaylist('spotify:playlist:AAA');

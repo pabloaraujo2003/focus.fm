@@ -1,5 +1,5 @@
 import { isAxiosError, type AxiosInstance } from 'axios';
-import type { MusicProvider } from '../../aplicacao/portas/music-provider';
+import type { MusicProvider, PlaylistMusica } from '../../aplicacao/portas/music-provider';
 import type { RelogioPort } from '../../aplicacao/portas/relogio-port';
 import { NenhumDeviceAtivoError } from '../../dominio/erros/nenhum-device-ativo-error';
 import { SpotifyError } from '../../dominio/erros/spotify-error';
@@ -15,6 +15,19 @@ export class SpotifyProvider implements MusicProvider {
     private readonly relogio: RelogioPort,
   ) {}
 
+  async listarPlaylists(): Promise<PlaylistMusica[]> {
+    const playlists: PlaylistMusica[] = [];
+    let rota: string | null = '/me/playlists?limit=50';
+
+    while (rota !== null) {
+      const pagina = await this.get<RespostaPlaylists>(rota);
+      playlists.push(...pagina.items.map(mapearPlaylist));
+      rota = proximaRota(pagina.next);
+    }
+
+    return playlists;
+  }
+
   async tocarPlaylist(uri: string): Promise<void> {
     await this.put('/me/player/play', { context_uri: uri });
   }
@@ -24,13 +37,24 @@ export class SpotifyProvider implements MusicProvider {
   }
 
   private async put(rota: string, corpo: unknown): Promise<void> {
+    await this.requisitar('put', rota, corpo);
+  }
+
+  private async get<T>(rota: string): Promise<T> {
+    return this.requisitar<T>('get', rota, undefined);
+  }
+
+  private async requisitar<T = void>(metodo: 'get' | 'put', rota: string, corpo: unknown): Promise<T> {
     for (let tentativa = 1; ; tentativa += 1) {
       const token = await this.auth.tokenDeAcesso();
       try {
-        await this.http.put(`${BASE}${rota}`, corpo, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        return;
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        if (metodo === 'get') {
+          const { data } = await this.http.get<T>(`${BASE}${rota}`, config);
+          return data;
+        }
+        await this.http.put(`${BASE}${rota}`, corpo, config);
+        return undefined as T;
       } catch (erro) {
         await this.tratarErro(erro, tentativa); // lança ou espera p/ retry
       }
@@ -67,4 +91,33 @@ export class SpotifyProvider implements MusicProvider {
   private esperar(ms: number): Promise<void> {
     return new Promise((resolve) => this.relogio.agendar(ms, resolve));
   }
+}
+
+interface RespostaPlaylists {
+  readonly items: readonly PlaylistSpotify[];
+  readonly next: string | null;
+}
+
+interface PlaylistSpotify {
+  readonly id: string;
+  readonly name: string;
+  readonly uri: string;
+  readonly tracks?: { readonly total?: number };
+  readonly images: readonly { readonly url: string }[];
+}
+
+function mapearPlaylist(playlist: PlaylistSpotify): PlaylistMusica {
+  return {
+    id: playlist.id,
+    nome: playlist.name,
+    uri: playlist.uri,
+    totalFaixas: playlist.tracks?.total ?? 0,
+    imagemUrl: playlist.images[0]?.url ?? null,
+  };
+}
+
+function proximaRota(next: string | null): string | null {
+  if (next === null) return null;
+  const url = new URL(next);
+  return `${url.pathname.replace('/v1', '')}${url.search}`;
 }

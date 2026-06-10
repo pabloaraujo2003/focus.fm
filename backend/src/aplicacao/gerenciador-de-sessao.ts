@@ -32,26 +32,39 @@ export class GerenciadorDeSessao {
 
   constructor(
     private readonly config: ConfiguracaoResolvida,
-    private readonly playlists: PlaylistsConfiguradas,
     private readonly relogio: RelogioPort,
     private readonly music: MusicProvider,
     private readonly repositorio: SessaoRepository,
   ) {}
 
-  async iniciar(contexto: string): Promise<void> {
+  async iniciar(contexto: string, playlists: PlaylistsConfiguradas): Promise<void> {
+    const snapshotAnterior = this.snapshot;
+    const sessaoAnterior = this.sessaoAtual;
+    const terminaEmAnterior = this.terminaEm;
     // O reducer valida a transição (idle -> focando) e o contexto.
     this.snapshot = transicionar(this.snapshot, { tipo: 'INICIAR', contexto }, this.config);
     this.sessaoAtual = Sessao.iniciar({
       contexto: this.snapshot.contexto ?? contexto,
       iniciadaEm: this.relogio.agora(),
-      playlistFoco: this.playlists.foco,
-      playlistPausa: this.playlists.pausa,
+      playlistFoco: playlists.foco,
+      playlistPausa: playlists.pausa,
     });
-    await this.entrarNoEstado();
+    try {
+      await this.entrarNoEstado(playlists);
+    } catch (erro) {
+      this.pararTimer();
+      this.snapshot = snapshotAnterior;
+      this.sessaoAtual = sessaoAnterior;
+      this.terminaEm = terminaEmAnterior;
+      throw erro;
+    }
   }
 
   async finalizar(): Promise<Sessao> {
     const ciclos = this.snapshot.ciclosCompletados;
+    const snapshotAnterior = this.snapshot;
+    const sessaoAnterior = this.sessaoAtual;
+    const terminaEmAnterior = this.terminaEm;
     // Valida primeiro (lança em idle), só depois mexe em timer/música.
     this.snapshot = transicionar(this.snapshot, { tipo: 'FINALIZAR' }, this.config);
     const sessao = this.sessaoAtual;
@@ -61,10 +74,22 @@ export class GerenciadorDeSessao {
     }
     this.pararTimer();
     sessao.finalizar(this.relogio.agora(), ciclos);
-    await this.repositorio.salvar(sessao);
-    await this.music.pausar();
     this.sessaoAtual = null;
     this.terminaEm = null;
+    try {
+      await this.repositorio.salvar(sessao);
+    } catch (erro) {
+      await this.music.pausar();
+      throw erro;
+    }
+    try {
+      await this.music.pausar();
+    } catch (erro) {
+      this.snapshot = snapshotAnterior;
+      this.sessaoAtual = sessaoAnterior;
+      this.terminaEm = terminaEmAnterior;
+      throw erro;
+    }
     return sessao;
   }
 
@@ -72,8 +97,8 @@ export class GerenciadorDeSessao {
     return { snapshot: this.snapshot, terminaEm: this.terminaEm };
   }
 
-  private async entrarNoEstado(): Promise<void> {
-    const { duracaoMin, playlist } = this.parametrosDoEstado(this.snapshot.estado);
+  private async entrarNoEstado(playlists: PlaylistsConfiguradas): Promise<void> {
+    const { duracaoMin, playlist } = this.parametrosDoEstado(this.snapshot.estado, playlists);
     await this.music.tocarPlaylist(playlist);
     const ms = duracaoMin * MS_POR_MIN;
     this.terminaEm = new Date(this.relogio.agora().getTime() + ms);
@@ -87,7 +112,11 @@ export class GerenciadorDeSessao {
     try {
       const tipo = this.snapshot.estado === 'focando' ? 'COMPLETAR_FOCO' : 'COMPLETAR_PAUSA';
       this.snapshot = transicionar(this.snapshot, { tipo }, this.config);
-      await this.entrarNoEstado();
+      const sessao = this.sessaoAtual;
+      if (sessao === null) {
+        throw new Error('estado inconsistente: periodo completado sem entidade Sessao');
+      }
+      await this.entrarNoEstado({ foco: sessao.playlistFoco, pausa: sessao.playlistPausa });
     } catch (erro) {
       // Falha de música não pode matar o timer silenciosamente; na fase 2
       // isso vira log estruturado + status de erro consultável.
@@ -95,14 +124,17 @@ export class GerenciadorDeSessao {
     }
   }
 
-  private parametrosDoEstado(estado: EstadoSessao): { duracaoMin: number; playlist: string } {
+  private parametrosDoEstado(
+    estado: EstadoSessao,
+    playlists: PlaylistsConfiguradas,
+  ): { duracaoMin: number; playlist: string } {
     switch (estado) {
       case 'focando':
-        return { duracaoMin: this.config.duracaoFocoMin, playlist: this.playlists.foco };
+        return { duracaoMin: this.config.duracaoFocoMin, playlist: playlists.foco };
       case 'pausa_curta':
-        return { duracaoMin: this.config.duracaoPausaCurtaMin, playlist: this.playlists.pausa };
+        return { duracaoMin: this.config.duracaoPausaCurtaMin, playlist: playlists.pausa };
       case 'pausa_longa':
-        return { duracaoMin: this.config.duracaoPausaLongaMin, playlist: this.playlists.pausa };
+        return { duracaoMin: this.config.duracaoPausaLongaMin, playlist: playlists.pausa };
       case 'idle':
         throw new Error('estado idle não tem período agendável');
     }

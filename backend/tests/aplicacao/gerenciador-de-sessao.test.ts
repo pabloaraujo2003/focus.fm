@@ -20,12 +20,12 @@ describe('GerenciadorDeSessao', () => {
     music = new MusicProviderFake();
     repositorio = new SessaoRepositoryFake();
     gerenciador = new GerenciadorDeSessao(
-      resolverConfiguracao(), playlists, relogio, music, repositorio,
+      resolverConfiguracao(), relogio, music, repositorio,
     );
   });
 
   it('iniciar: entra em foco, toca playlist de foco e agenda o fim', async () => {
-    await gerenciador.iniciar('estudar generics');
+    await gerenciador.iniciar('estudar generics', playlists);
     const status = gerenciador.obterStatus();
     expect(status.snapshot.estado).toBe('focando');
     expect(music.chamadas).toEqual(['tocar:spotify:playlist:FOCO']);
@@ -33,7 +33,7 @@ describe('GerenciadorDeSessao', () => {
   });
 
   it('ao fim do foco entra em pausa_curta e troca a playlist', async () => {
-    await gerenciador.iniciar('x');
+    await gerenciador.iniciar('x', playlists);
     await relogio.avancar(25 * MIN);
     const status = gerenciador.obterStatus();
     expect(status.snapshot.estado).toBe('pausa_curta');
@@ -43,7 +43,7 @@ describe('GerenciadorDeSessao', () => {
   });
 
   it('apos 4 focos completos entra em pausa_longa', async () => {
-    await gerenciador.iniciar('x');
+    await gerenciador.iniciar('x', playlists);
     // 3 ciclos completos (foco 25 + pausa curta 5) + 4o foco 25
     await relogio.avancar((3 * 30 + 25) * MIN);
     const status = gerenciador.obterStatus();
@@ -53,7 +53,7 @@ describe('GerenciadorDeSessao', () => {
   });
 
   it('finalizar: grava sessão com ciclos e duração, pausa música, volta a idle', async () => {
-    await gerenciador.iniciar('estudar generics');
+    await gerenciador.iniciar('estudar generics', playlists);
     await relogio.avancar(55 * MIN); // 25 foco + 5 pausa + 25 foco = 2 ciclos
     const sessao = await gerenciador.finalizar();
     expect(sessao.ciclosCompletados).toBe(2);
@@ -68,16 +68,45 @@ describe('GerenciadorDeSessao', () => {
   });
 
   it('finalizar cancela o timer pendente (nada dispara depois)', async () => {
-    await gerenciador.iniciar('x');
+    await gerenciador.iniciar('x', playlists);
     await gerenciador.finalizar();
     const chamadasAntes = music.chamadas.length;
     await relogio.avancar(120 * MIN);
     expect(music.chamadas.length).toBe(chamadasAntes);
   });
 
+  it('finalizar limpa a sessão e pausa música mesmo se o repositório falhar', async () => {
+    repositorio.falharAoSalvar = true;
+
+    await gerenciador.iniciar('x', playlists);
+
+    await expect(gerenciador.finalizar()).rejects.toThrow('falha simulada');
+
+    expect(music.chamadas.at(-1)).toBe('pausar');
+    expect(gerenciador.obterStatus()).toEqual({
+      snapshot: { estado: 'idle', ciclosCompletados: 0, contexto: null },
+      terminaEm: null,
+    });
+  });
+
   it('iniciar com sessão ativa e finalizar sem sessão lançam TransicaoInvalidaError', async () => {
     await expect(gerenciador.finalizar()).rejects.toThrow(TransicaoInvalidaError);
-    await gerenciador.iniciar('x');
-    await expect(gerenciador.iniciar('y')).rejects.toThrow(TransicaoInvalidaError);
+    await gerenciador.iniciar('x', playlists);
+    await expect(gerenciador.iniciar('y', playlists)).rejects.toThrow(TransicaoInvalidaError);
+  });
+
+  it('iniciar restaura idle se o provider de música falhar', async () => {
+    const musicComFalha = new MusicProviderFake();
+    musicComFalha.falharAoTocar = true;
+    gerenciador = new GerenciadorDeSessao(
+      resolverConfiguracao(), relogio, musicComFalha, repositorio,
+    );
+
+    await expect(gerenciador.iniciar('x', playlists)).rejects.toThrow('falha simulada');
+
+    expect(gerenciador.obterStatus()).toEqual({
+      snapshot: { estado: 'idle', ciclosCompletados: 0, contexto: null },
+      terminaEm: null,
+    });
   });
 });

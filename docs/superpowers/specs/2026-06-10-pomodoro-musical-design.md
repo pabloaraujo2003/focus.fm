@@ -21,7 +21,7 @@ limpa, Repository/Provider, tsyringe, union types, generics e utility types.
 
 1. Timer configurável: foco 25 min, pausa curta 5 min, pausa longa 15 min a cada 4 ciclos (defaults; configuráveis)
 2. Máquina de estados explícita: `idle → focando → pausa_curta → focando → … → pausa_longa → idle`; transições inválidas impossíveis em compilação e protegidas em runtime
-3. Spotify: ao entrar em cada estado, tocar a playlist correspondente (2 playlists fixas configuráveis: foco e pausa)
+3. Spotify: listar playlists do usuário e, ao iniciar a sessão, tocar a playlist escolhida para foco e pausa
 4. Campo de contexto da sessão (texto livre) informado ao iniciar
 5. Registro ao finalizar: data, contexto, ciclos completados, duração total, playlists usadas
 6. Interface web mínima: uma página Next.js com countdown, contexto e controles
@@ -113,7 +113,8 @@ etapa do Supabase (abstração extraída de código concreto, com valor didátic
 
 ### API REST do MVP
 
-- `POST /sessao` — inicia (body: `{ contexto }`)
+- `GET /spotify/playlists` — lista playlists do usuário autenticado para seleção no front
+- `POST /sessao` — inicia (body: `{ contexto, playlistFoco, playlistPausa }`)
 - `GET /sessao` — snapshot atual + `terminaEm`
 - `POST /sessao/finalizar` — encerra e grava no Supabase
 - `GET /auth/spotify` e `GET /auth/spotify/callback` — fluxo PKCE
@@ -138,8 +139,10 @@ até 5 usuários — ok para uso pessoal).
 2. **Auth:** Authorization Code com **PKCE** (nunca Implicit Grant). Sem Client Secret.
 3. **Redirect URI:** `http://127.0.0.1:3333/auth/spotify/callback` (loopback IP é a
    única exceção HTTP permitida; nunca `localhost` nem wildcard).
-4. **Escopos mínimos:** só `user-modify-playback-state` e `user-read-playback-state`.
-   Tocar playlist via `context_uri` não exige escopos de leitura de playlist.
+4. **Escopos mínimos para o fluxo interativo atual:** `user-modify-playback-state`,
+   `user-read-playback-state`, `playlist-read-private` e `playlist-read-collaborative`.
+   Tocar playlist via `context_uri` não exige leitura de playlist, mas o seletor da UI usa
+   `GET /me/playlists`.
 5. **Tokens:** refresh token persistido localmente (arquivo fora do git); renovação
    automática via interceptor axios; nenhuma credencial Spotify chega ao front.
 6. **Rate limit:** em HTTP 429, respeitar `Retry-After` com backoff exponencial e
@@ -175,4 +178,4 @@ até 5 usuários — ok para uso pessoal).
 10. Front: página Next.js com countdown, contexto e controles via axios
 
 **Dependências externas do Pablo:** projeto Supabase (URL + service role key), app no
-Spotify Developer Dashboard (Client ID; conta Premium), URIs das 2 playlists.
+Spotify Developer Dashboard (Client ID; conta Premium).

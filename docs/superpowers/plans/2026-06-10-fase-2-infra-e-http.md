@@ -10,6 +10,8 @@
 
 **Credenciais já fornecidas:** Supabase URL `https://fehjaiqsxjwgoqjunndu.supabase.co`; Spotify Client ID `c2895ee404fc430b961983c59527cd14`. Pendentes do Pablo (no `.env`, nunca no git): `SUPABASE_SERVICE_ROLE_KEY`, playlists de foco e pausa.
 
+**Status em 2026-06-10 14:11:** código das tasks 1–8 implementado até a API Express, com ajuste posterior para playlists interativas via `GET /spotify/playlists` e `POST /sessao { contexto, playlistFoco, playlistPausa }`; `npm test` passou com 57 testes em 15 arquivos e `npm run typecheck` passou. Checkboxes de commit permanecem abertos porque os commits por task não foram feitos nesta sessão. Próximo passo real: Task 9, verificação manual ponta a ponta com credenciais do Pablo e reautorização do Spotify para os novos escopos.
+
 ---
 
 ### Task 1: Dependências e configuração de ambiente
@@ -1172,10 +1174,11 @@ git add -A && git commit -m "feat(http): API Express com rotas de sessão e auth
 
 ### Task 9: Verificação manual ponta a ponta (requer o Pablo)
 
-- [ ] Pablo: preencher `SUPABASE_SERVICE_ROLE_KEY`, `PLAYLIST_FOCO`, `PLAYLIST_PAUSA` em `backend/.env`
+- [ ] Pablo: preencher `SUPABASE_SERVICE_ROLE_KEY` em `backend/.env`
 - [ ] Pablo: rodar `backend/src/infraestrutura/supabase/schema.sql` no SQL Editor do Supabase
 - [ ] Pablo: no app do Spotify Dashboard, conferir redirect URI `http://127.0.0.1:3333/auth/spotify/callback`
-- [ ] `npm run dev` → abrir `http://127.0.0.1:3333/auth/spotify` → autorizar
-- [ ] Com o Spotify desktop aberto: `curl -X POST 127.0.0.1:3333/sessao -H 'Content-Type: application/json' -d '{"contexto":"teste real"}'` → música de foco toca
+- [ ] `npm run dev` → abrir `http://127.0.0.1:3333/auth/spotify` → autorizar com os escopos de playlists
+- [ ] `curl 127.0.0.1:3333/spotify/playlists` → escolher duas URIs da resposta
+- [ ] Com o Spotify desktop aberto: `curl -X POST 127.0.0.1:3333/sessao -H 'Content-Type: application/json' -d '{"contexto":"teste real","playlistFoco":"spotify:playlist:...","playlistPausa":"spotify:playlist:..."}'` → música de foco toca
 - [ ] `curl -X POST 127.0.0.1:3333/sessao/finalizar` → música pausa, linha aparece na tabela `sessoes` (conferir no Supabase)
 - [ ] Commit final: `git commit -am "docs: fase 2 verificada ponta a ponta"`
