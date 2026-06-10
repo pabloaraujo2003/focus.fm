@@ -29,6 +29,8 @@ export class GerenciadorDeSessao {
   private sessaoAtual: Sessao | null = null;
   private cancelarTimer: (() => void) | null = null;
   private terminaEm: Date | null = null;
+  private tempoRestanteMs: number = 0;
+  private inicioDoPeríodo: number = 0;
 
   constructor(
     private readonly config: ConfiguracaoResolvida,
@@ -97,12 +99,46 @@ export class GerenciadorDeSessao {
     return { snapshot: this.snapshot, terminaEm: this.terminaEm };
   }
 
+  pausar(): void {
+    // Para o timer atual
+    this.pararTimer();
+
+    // Memoriza quanto tempo falta pro período terminar
+    const agora = this.relogio.agora().getTime();
+    const tempoPassadoMs = agora - this.inicioDoPeríodo;
+    this.tempoRestanteMs = Math.max(0, this.tempoRestanteMs - tempoPassadoMs);
+
+    // Transiciona a máquina
+    this.snapshot = transicionar(this.snapshot, { tipo: 'PAUSAR' }, this.config);
+  }
+
+  retomar(): void {
+    // Transiciona a máquina
+    this.snapshot = transicionar(this.snapshot, { tipo: 'RETOMAR' }, this.config);
+
+    // Reinicia o relógio com tempo restante memorizado
+    this.agendarProximaTransicao(this.tempoRestanteMs);
+  }
+
   private async entrarNoEstado(playlists: PlaylistsConfiguradas): Promise<void> {
     const { duracaoMin, playlist } = this.parametrosDoEstado(this.snapshot.estado, playlists);
     await this.music.tocarPlaylist(playlist);
     const ms = duracaoMin * MS_POR_MIN;
     this.terminaEm = new Date(this.relogio.agora().getTime() + ms);
+    this.agendarProximaTransicao(ms);
+  }
+
+  private agendarProximaTransicao(customMs?: number): void {
+    const ms = customMs ?? (this.snapshot.estado === 'focando'
+      ? this.config.duracaoFocoMin * MS_POR_MIN
+      : this.snapshot.estado === 'pausa_curta'
+      ? this.config.duracaoPausaCurtaMin * MS_POR_MIN
+      : this.config.duracaoPausaLongaMin * MS_POR_MIN);
+
     this.pararTimer();
+    this.inicioDoPeríodo = this.relogio.agora().getTime();
+    this.tempoRestanteMs = ms;
+
     this.cancelarTimer = this.relogio.agendar(ms, () => {
       void this.aoCompletarPeriodo();
     });

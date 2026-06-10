@@ -109,4 +109,100 @@ describe('GerenciadorDeSessao', () => {
       terminaEm: null,
     });
   });
+
+  it('pausar: para o relógio e transiciona para pausado', async () => {
+    await gerenciador.iniciar('estudar', playlists);
+    await relogio.avancar(10 * MIN);
+
+    gerenciador.pausar();
+
+    const status = gerenciador.obterStatus();
+    expect(status.snapshot.estado).toBe('pausado');
+    expect(status.snapshot.estadoAnterior).toBe('focando');
+  });
+
+  it('pausar: memoriza tempo restante do período', async () => {
+    await gerenciador.iniciar('estudar', playlists);
+    await relogio.avancar(10 * MIN); // Avançou 10 dos 25 minutos
+
+    gerenciador.pausar();
+
+    // Agora avança 5 minutos enquanto pausado (NÃO deve afetar o timer)
+    await relogio.avancar(5 * MIN);
+
+    // Retoma
+    gerenciador.retomar();
+
+    // Avança mais 15 minutos (completando os 25 do foco)
+    await relogio.avancar(15 * MIN);
+
+    const status = gerenciador.obterStatus();
+    expect(status.snapshot.estado).toBe('pausa_curta');
+    expect(status.snapshot.ciclosCompletados).toBe(1);
+  });
+
+  it('retomar: restaura o estado anterior e retoma o timer com tempo correto', async () => {
+    await gerenciador.iniciar('estudar', playlists);
+    await relogio.avancar(10 * MIN);
+
+    gerenciador.pausar();
+    let status = gerenciador.obterStatus();
+    expect(status.snapshot.estado).toBe('pausado');
+
+    gerenciador.retomar();
+    status = gerenciador.obterStatus();
+    expect(status.snapshot.estado).toBe('focando');
+    expect(status.snapshot.estadoAnterior).toBeUndefined();
+  });
+
+  it('pausar em pausa_curta: memoriza tempo restante da pausa', async () => {
+    await gerenciador.iniciar('estudar', playlists);
+    await relogio.avancar(25 * MIN); // Completa foco, entra em pausa_curta
+
+    let status = gerenciador.obterStatus();
+    expect(status.snapshot.estado).toBe('pausa_curta');
+
+    gerenciador.pausar();
+    status = gerenciador.obterStatus();
+    expect(status.snapshot.estado).toBe('pausado');
+    expect(status.snapshot.estadoAnterior).toBe('pausa_curta');
+
+    await relogio.avancar(3 * MIN); // Simula tempo passando enquanto pausado
+
+    gerenciador.retomar();
+    await relogio.avancar(5 * MIN); // Total: 3 + 5 = 8 min (faltariam 0 pois a pausa era 5 min)
+
+    // Na verdade: pausa é 5 min, adiantamos 3 antes de pausar, avanção + 5 = fim da pausa
+    status = gerenciador.obterStatus();
+    expect(status.snapshot.estado).toBe('focando');
+    expect(status.snapshot.ciclosCompletados).toBe(1);
+  });
+
+  it('pausar cancela o timer pendente (nenhuma transição automática ocorre)', async () => {
+    await gerenciador.iniciar('estudar', playlists);
+    await relogio.avancar(10 * MIN);
+
+    gerenciador.pausar();
+
+    const chamadasAntes = music.chamadas.length;
+    // Avança bastante enquanto pausado
+    await relogio.avancar(30 * MIN);
+
+    // Nenhuma chamada de música foi feita (não entrou em pausa_curta)
+    expect(music.chamadas.length).toBe(chamadasAntes);
+  });
+
+  it('pausar então finalizar: volta a idle sem disparar transições', async () => {
+    await gerenciador.iniciar('estudar', playlists);
+    await relogio.avancar(10 * MIN);
+
+    gerenciador.pausar();
+    const sessao = await gerenciador.finalizar();
+
+    expect(sessao.duracaoTotalSeg).toBe(10 * 60);
+    expect(gerenciador.obterStatus()).toEqual({
+      snapshot: { estado: 'idle', ciclosCompletados: 0, contexto: null },
+      terminaEm: null,
+    });
+  });
 });
