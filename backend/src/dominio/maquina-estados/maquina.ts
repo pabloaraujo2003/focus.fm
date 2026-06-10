@@ -13,6 +13,7 @@ export interface SnapshotSessao {
 
 export const SNAPSHOT_INICIAL: SnapshotSessao = {
   estado: 'idle',
+  estadoAnterior: undefined,
   ciclosCompletados: 0,
   contexto: null,
 };
@@ -52,8 +53,14 @@ export function transicionar(
     }
     case 'RETOMAR': {
       exigirEstado(snapshot, evento.tipo, ['pausado']);
-      const estadoParaRetomar = snapshot.estadoAnterior || 'focando';
-      return { ...snapshot, estado: estadoParaRetomar, estadoAnterior: undefined };
+      if (!snapshot.estadoAnterior) {
+        throw new ValidationError('Estado pausado sem estadoAnterior: invariante violada');
+      }
+      return {
+        ...snapshot,
+        estado: snapshot.estadoAnterior,
+        estadoAnterior: undefined,
+      };
     }
     case 'FINALIZAR': {
       exigirEstado(snapshot, evento.tipo, ['focando', 'pausa_curta', 'pausa_longa', 'pausado']);

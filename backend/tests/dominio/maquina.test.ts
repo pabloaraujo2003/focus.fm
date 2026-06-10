@@ -61,3 +61,72 @@ describe('transicionar', () => {
     expect(entrada).toEqual({ estado: 'focando', ciclosCompletados: 0, contexto: 'x' });
   });
 });
+
+describe('PAUSAR', () => {
+  it('transiciona de focando → pausado e memoriza estado anterior', () => {
+    const snapshot: SnapshotSessao = { estado: 'focando', ciclosCompletados: 0, contexto: 'Estudo' };
+    const novo = transicionar(snapshot, { tipo: 'PAUSAR' }, config);
+    expect(novo.estado).toBe('pausado');
+    expect(novo.estadoAnterior).toBe('focando');
+  });
+
+  it('transiciona de pausa_curta → pausado', () => {
+    const snapshot: SnapshotSessao = { estado: 'pausa_curta', ciclosCompletados: 1, contexto: 'Estudo' };
+    const novo = transicionar(snapshot, { tipo: 'PAUSAR' }, config);
+    expect(novo.estado).toBe('pausado');
+    expect(novo.estadoAnterior).toBe('pausa_curta');
+  });
+
+  it('transiciona de pausa_longa → pausado', () => {
+    const snapshot: SnapshotSessao = { estado: 'pausa_longa', ciclosCompletados: 4, contexto: 'Estudo' };
+    const novo = transicionar(snapshot, { tipo: 'PAUSAR' }, config);
+    expect(novo.estado).toBe('pausado');
+    expect(novo.estadoAnterior).toBe('pausa_longa');
+  });
+
+  it('rejeita PAUSAR de idle', () => {
+    const snapshot: SnapshotSessao = { estado: 'idle', ciclosCompletados: 0, contexto: null };
+    expect(() => transicionar(snapshot, { tipo: 'PAUSAR' }, config)).toThrow();
+  });
+
+  it('rejeita PAUSAR se já pausado', () => {
+    const snapshot: SnapshotSessao = { estado: 'pausado', estadoAnterior: 'focando', ciclosCompletados: 1, contexto: 'Estudo' };
+    expect(() => transicionar(snapshot, { tipo: 'PAUSAR' }, config)).toThrow();
+  });
+});
+
+describe('RETOMAR', () => {
+  it('volta de pausado para estado anterior', () => {
+    const snapshot: SnapshotSessao = { estado: 'pausado', estadoAnterior: 'focando', ciclosCompletados: 1, contexto: 'Estudo' };
+    const novo = transicionar(snapshot, { tipo: 'RETOMAR' }, config);
+    expect(novo.estado).toBe('focando');
+    expect(novo.estadoAnterior).toBeUndefined();
+  });
+
+  it('retoma de pausa_curta corretamente', () => {
+    const snapshot: SnapshotSessao = { estado: 'pausado', estadoAnterior: 'pausa_curta', ciclosCompletados: 1, contexto: 'Estudo' };
+    const novo = transicionar(snapshot, { tipo: 'RETOMAR' }, config);
+    expect(novo.estado).toBe('pausa_curta');
+    expect(novo.estadoAnterior).toBeUndefined();
+  });
+
+  it('rejeita RETOMAR se não pausado', () => {
+    const snapshot: SnapshotSessao = { estado: 'focando', ciclosCompletados: 1, contexto: 'Estudo' };
+    expect(() => transicionar(snapshot, { tipo: 'RETOMAR' }, config)).toThrow();
+  });
+
+  it('rejeita RETOMAR de pausado sem estadoAnterior', () => {
+    const snapshot: SnapshotSessao = { estado: 'pausado', estadoAnterior: undefined, ciclosCompletados: 0, contexto: 'Estudo' };
+    expect(() => transicionar(snapshot, { tipo: 'RETOMAR' }, config)).toThrow();
+  });
+});
+
+describe('FINALIZAR com pausado', () => {
+  it('finaliza de pausado corretamente', () => {
+    const snapshot: SnapshotSessao = { estado: 'pausado', estadoAnterior: 'focando', ciclosCompletados: 2, contexto: 'Estudo' };
+    const novo = transicionar(snapshot, { tipo: 'FINALIZAR' }, config);
+    expect(novo.estado).toBe('idle');
+    expect(novo.ciclosCompletados).toBe(0);
+    expect(novo.estadoAnterior).toBeUndefined();
+  });
+});
