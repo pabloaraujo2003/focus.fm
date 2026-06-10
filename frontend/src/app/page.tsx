@@ -6,6 +6,7 @@ import { DiscoVinil } from '../components/disco-vinil';
 import { GaleriaPlaylists } from '../components/galeria-playlists';
 import { MostradorTempo } from '../components/mostrador-tempo';
 import { PainelSessao } from '../components/painel-sessao';
+import { pausarSessao, retomarSessao } from '../services/sessao-api';
 import { useCountdown } from '../hooks/use-countdown';
 import { useSessao } from '../hooks/use-sessao';
 import { useSessaoNotifications } from '../hooks/use-sessao-notifications';
@@ -20,6 +21,28 @@ export default function Home() {
   const [contexto, setContexto] = useState('');
   const [playlistFoco, setPlaylistFoco] = useState('');
   const [playlistPausa, setPlaylistPausa] = useState('');
+  const [estadoPausa, setEstadoPausa] = useState<string>('idle');
+  const [carregando, setCarregando] = useState(false);
+
+  const handlePausar = async () => {
+    setCarregando(true);
+    try {
+      const result = await pausarSessao();
+      setEstadoPausa(result.estado);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const handleRetomar = async () => {
+    setCarregando(true);
+    try {
+      const result = await retomarSessao();
+      setEstadoPausa(result.estado);
+    } finally {
+      setCarregando(false);
+    }
+  };
 
   return (
     <main className="estudio" data-estado={sessao.estado}>
@@ -56,6 +79,29 @@ export default function Home() {
           aoIniciar={() => void sessao.iniciar({ contexto, playlistFoco, playlistPausa })}
           aoFinalizar={() => void sessao.finalizar()}
         />
+
+        {sessao.ativo && (
+          <div className="controles-pausa">
+            {estadoPausa !== 'pausado' && (
+              <button
+                onClick={handlePausar}
+                disabled={carregando}
+                className="botao-pausa"
+              >
+                ⏸ Pausar
+              </button>
+            )}
+            {estadoPausa === 'pausado' && (
+              <button
+                onClick={handleRetomar}
+                disabled={carregando}
+                className="botao-retomar"
+              >
+                ▶ Retomar
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       {sessao.erro ? (
