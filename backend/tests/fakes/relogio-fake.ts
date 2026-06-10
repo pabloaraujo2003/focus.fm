@@ -34,6 +34,9 @@ export class RelogioFake implements RelogioPort {
   // antes do próximo disparo — espelha o comportamento real do setTimeout.
   async avancar(ms: number): Promise<void> {
     const destino = this.agoraMs + ms;
+    // Cede o event loop antes de varrer: promises já em andamento (ex.: o
+    // retry do SpotifyProvider após um 429) ainda vão agendar suas esperas.
+    await new Promise((resolve) => setImmediate(resolve));
     let proximo = this.proximoAte(destino);
     while (proximo !== undefined) {
       this.agoraMs = proximo.dispararEm;
