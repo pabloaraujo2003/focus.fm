@@ -26,7 +26,15 @@ export function criarApp(container: DependencyContainer): Express {
   });
 
   app.get('/sessao', (_req, res) => {
-    res.json(gerenciador().obterStatus());
+    const status = gerenciador().obterStatus();
+    res.json({
+      estado: status.snapshot.estado,
+      estadoAnterior: status.snapshot.estadoAnterior,
+      ciclosCompletados: status.snapshot.ciclosCompletados,
+      contexto: status.snapshot.contexto,
+      terminaEm: status.terminaEm?.toISOString() ?? null,
+      pausado: status.snapshot.estado === 'pausado',
+    });
   });
 
   app.post('/sessao/finalizar', async (_req, res) => {
