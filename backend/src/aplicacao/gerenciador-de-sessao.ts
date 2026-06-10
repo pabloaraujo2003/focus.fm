@@ -120,6 +120,14 @@ export class GerenciadorDeSessao {
     this.agendarProximaTransicao(this.tempoRestanteMs);
   }
 
+  obterSnapshot(): SnapshotSessao {
+    return this.snapshot;
+  }
+
+  async obterContextosRecentes(limit: number = 10): Promise<string[]> {
+    return this.repositorio.obterContextosRecentes(limit);
+  }
+
   private async entrarNoEstado(playlists: PlaylistsConfiguradas): Promise<void> {
     const { duracaoMin, playlist } = this.parametrosDoEstado(this.snapshot.estado, playlists);
     await this.music.tocarPlaylist(playlist);

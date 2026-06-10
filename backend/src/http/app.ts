@@ -41,6 +41,32 @@ export function criarApp(container: DependencyContainer): Express {
     });
   });
 
+  app.patch('/sessao/pausar', async (_req, res) => {
+    gerenciador().pausar();
+    const snapshot = gerenciador().obterSnapshot();
+    res.json({
+      estado: snapshot.estado,
+      estadoAnterior: snapshot.estadoAnterior,
+      terminaEm: new Date(Date.now() + 1000 * 60).toISOString(),
+    });
+  });
+
+  app.patch('/sessao/retomar', async (_req, res) => {
+    gerenciador().retomar();
+    const snapshot = gerenciador().obterSnapshot();
+    res.json({
+      estado: snapshot.estado,
+      estadoAnterior: snapshot.estadoAnterior,
+      terminaEm: new Date(Date.now() + 1000 * 60).toISOString(),
+    });
+  });
+
+  app.get('/sessoes/contextos', async (req, res) => {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    const contextos = await gerenciador().obterContextosRecentes(limit);
+    res.json({ contextos });
+  });
+
   app.get('/auth/spotify', (_req, res) => {
     res.redirect(auth().urlDeAutorizacao());
   });

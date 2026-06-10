@@ -11,4 +11,16 @@ export class SessaoRepositoryFake implements SessaoRepository {
     }
     this.salvas.push(sessao);
   }
+
+  async pausar(_sessaoId: string, _estadoAnterior: string): Promise<void> {
+    // implementação fake
+  }
+
+  async retomar(_sessaoId: string, _tempoDecorridoMs: number): Promise<void> {
+    // implementação fake
+  }
+
+  async obterContextosRecentes(_limit?: number): Promise<string[]> {
+    return [];
+  }
 }
