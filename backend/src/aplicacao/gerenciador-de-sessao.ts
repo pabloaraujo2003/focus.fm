@@ -135,6 +135,8 @@ export class GerenciadorDeSessao {
         return { duracaoMin: this.config.duracaoPausaCurtaMin, playlist: playlists.pausa };
       case 'pausa_longa':
         return { duracaoMin: this.config.duracaoPausaLongaMin, playlist: playlists.pausa };
+      case 'pausado':
+        throw new Error('estado pausado não tem período agendável');
       case 'idle':
         throw new Error('estado idle não tem período agendável');
     }

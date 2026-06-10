@@ -5,6 +5,8 @@ export type EventoSessao =
   | { tipo: 'INICIAR'; contexto: string }
   | { tipo: 'COMPLETAR_FOCO' }
   | { tipo: 'COMPLETAR_PAUSA' }
+  | { tipo: 'PAUSAR' }
+  | { tipo: 'RETOMAR' }
   | { tipo: 'FINALIZAR' };
 
 export type TipoEvento = EventoSessao['tipo']; // indexed access type

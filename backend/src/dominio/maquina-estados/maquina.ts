@@ -6,6 +6,7 @@ import type { EventoSessao, TipoEvento } from './eventos';
 
 export interface SnapshotSessao {
   readonly estado: EstadoSessao;
+  readonly estadoAnterior?: EstadoSessao;
   readonly ciclosCompletados: number;
   readonly contexto: string | null;
 }
@@ -45,8 +46,17 @@ export function transicionar(
       exigirEstado(snapshot, evento.tipo, ['pausa_curta', 'pausa_longa']);
       return { ...snapshot, estado: 'focando' };
     }
-    case 'FINALIZAR': {
+    case 'PAUSAR': {
       exigirEstado(snapshot, evento.tipo, ['focando', 'pausa_curta', 'pausa_longa']);
+      return { ...snapshot, estado: 'pausado', estadoAnterior: snapshot.estado };
+    }
+    case 'RETOMAR': {
+      exigirEstado(snapshot, evento.tipo, ['pausado']);
+      const estadoParaRetomar = snapshot.estadoAnterior || 'focando';
+      return { ...snapshot, estado: estadoParaRetomar, estadoAnterior: undefined };
+    }
+    case 'FINALIZAR': {
+      exigirEstado(snapshot, evento.tipo, ['focando', 'pausa_curta', 'pausa_longa', 'pausado']);
       return SNAPSHOT_INICIAL;
     }
   }
