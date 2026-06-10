@@ -1,0 +1,45 @@
+.vinil {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  border-radius: 12px;
+}
+
+.vinil__disco {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.vinil__info {
+  text-align: center;
+  color: #fff;
+}
+
+.vinil__musica {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.vinil__artista {
+  font-size: 0.9rem;
+  color: #aaa;
+  margin: 0.5rem 0 0 0;
+}
+
+.vinil--vazio, .vinil--erro {
+  color: #999;
+  text-align: center;
+  padding: 2rem;
+}
