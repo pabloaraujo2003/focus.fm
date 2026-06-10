@@ -13,6 +13,8 @@ export function rotuloEstado(estado: EstadoSessao): string {
       return 'Pausa curta';
     case 'pausa_longa':
       return 'Pausa longa';
+    case 'pausado':
+      return 'Pausado';
   }
 }
 

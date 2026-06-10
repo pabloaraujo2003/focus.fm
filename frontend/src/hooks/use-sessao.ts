@@ -77,11 +77,13 @@ export function useSessao() {
     }
   }, [sincronizarStatus]);
 
-  const estado = status?.snapshot.estado ?? 'idle';
+  const estado = status?.snapshot?.estado ?? 'idle';
+  const pausado = status?.pausado ?? false;
 
   return {
     status,
     estado,
+    pausado,
     ativo: estado !== 'idle',
     playlists,
     erro,
